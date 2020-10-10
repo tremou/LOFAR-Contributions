@@ -53,24 +53,38 @@ YX = -iRR - iRL + iLR + iLL
 YY =   RR -  RL -  LR +  LL
 """
 
-import optparse
+#import optparse
 import pyrap.tables as pt
 import numpy
+import glob
+import argparse
+import os
 
-def main(options):
+parser = argparse.ArgumentParser()
+parser.add_argument('-i','--inms', help='Input MS [no default]', nargs="+")
+parser.add_argument('-c','--column',help='Input column [default DATA]',default='DATA')
+parser.add_argument('-o','--outcol',help='Output column [default DATA_CIRC]',default='DATA_CIRC')
+parser.add_argument('-p','--poltable',help='Update POLARIZATION table? [default False]',default=False,action='store_true')
+parser.add_argument('-b','--back',help='Go back to linear polarization [default False]',default=False,action='store_true')
+parser.add_argument('-l','--lincol',help='Output linear polarization column, if the -b switch is used [default DATA_LIN]; we want to keep the original DATA column',default='DATA_LIN') 
+args = parser.parse_args()
+parser.print_help()
+
+
+def main(inms, column, outcol, poltable, back, lincol):
 
 	cI = numpy.complex(0.,1.)
 	
-	inms = options.inms
+	#inms = options.inms
 	if inms == '':
 			print 'Error: you have to specify an input MS, use -h for help'
 			return
-	column = options.column
-	outcol = options.outcol
+	#column = options.column
+	#outcol = options.outcol
 	
 	t = pt.table(inms, readonly=False, ack=True)
-	if options.back:
-		lincol = options.lincol
+	if back:
+		#lincol = options.lincol
 		if lincol not in t.colnames():
 				print 'Adding the output linear polarization column',lincol,'to',inms
 				coldmi = t.getdminfo(column)
@@ -114,22 +128,23 @@ def main(options):
 				(1,2,0))
 		print 'Finishing up...'
 		t.putcol(outcol, outdata)
-	if options.poltable:
+	if poltable:
 		print 'Updating the POLARIZATION table...'
 		tp = pt.table(inms+'/POLARIZATION',readonly=False,ack=True)
 		
 		### RVW EDIT 2012
-		if options.back:
+		if back:
 		   tp.putcol('CORR_TYPE',numpy.array([[9,10,11,12]],dtype=numpy.int32)) # FROM CIRC-->LIN
                 else:
 		   tp.putcol('CORR_TYPE',numpy.array([[5,6,7,8]],dtype=numpy.int32)) # FROM LIN-->CIRC
 
-opt = optparse.OptionParser()
-opt.add_option('-i','--inms',help='Input MS [no default]',default='')
-opt.add_option('-c','--column',help='Input column [default DATA]',default='DATA')
-opt.add_option('-o','--outcol',help='Output column [default DATA_CIRC]',default='DATA_CIRC')
-opt.add_option('-p','--poltable',help='Update POLARIZATION table? [default False]',default=False,action='store_true')
-opt.add_option('-b','--back',help='Go back to linear polarization [default False]',default=False,action='store_true')
-opt.add_option('-l','--lincol',help='Output linear polarization column, if the -b switch is used [default DATA_LIN]; we want to keep the original DATA column',default='DATA_LIN')
-options, arguments = opt.parse_args()
-main(options)
+#opt = optparse.OptionParser()
+#opt.add_option('-i','--inms',help='Input MS [no default]',default='')
+#opt.add_option('-c','--column',help='Input column [default DATA]',default='DATA')
+#opt.add_option('-o','--outcol',help='Output column [default DATA_CIRC]',default='DATA_CIRC')
+#opt.add_option('-p','--poltable',help='Update POLARIZATION table? [default False]',default=False,action='store_true')
+#opt.add_option('-b','--back',help='Go back to linear polarization [default False]',default=False,action='store_true')
+#opt.add_option('-l','--lincol',help='Output linear polarization column, if the -b switch is used [default DATA_LIN]; we want to keep the original DATA column',default='DATA_LIN')
+#options, arguments = opt.parse_args()
+#main(options)
+main(**vars(args))
